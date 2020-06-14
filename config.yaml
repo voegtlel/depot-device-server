@@ -1,0 +1,9 @@
+cardAuth:
+  secretKey: 2utq084nhg084qnhg943qjg3q9guwaa
+  headerPrefix: Bearer
+  # 10min
+  #expiration: 10*60
+  expiration: 600
+
+
+allowOrigins: ['http://localhost:4200', 'http://127.0.0.1:4200']
