@@ -1,18 +1,17 @@
-FROM python:3.7-alpine
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8
 
-ADD requirements.txt /srv/
-WORKDIR /srv
+# Install Poetry
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python && \
+    cd /usr/local/bin && \
+    ln -s /opt/poetry/bin/poetry && \
+    poetry config virtualenvs.create false
 
+# Copy using poetry.lock* in case it doesn't exist yet
+COPY ./pyproject.toml ./poetry.lock /app/
 
-# Pillow dependencies
-RUN apk --update add zlib jpeg \
-  && apk --update add --virtual build-dependencies python3-dev build-base openldap-dev wget jpeg-dev zlib-dev \
-  && pip install -r requirements.txt \
-  && pip install gunicorn \
-  && apk del build-dependencies && rm -rf /var/cache/apk/*
+RUN poetry install --no-root
 
-ADD . /srv/
+COPY ./depot_server /app/depot_server
 
-EXPOSE 80
-
-CMD ["gunicorn", "-b", "0.0.0.0:80", "--timeout", "120", "--log-level", "debug", "server:app"]
+ENV MODULE_NAME=depot_server.api
+ENV VARIABLE_NAME=app
