@@ -17,6 +17,7 @@ class CardModel(BaseModel):
     card_id: str
 
 
+@router.on_event('startup')
 async def card_startup():
     global card_reader
     assert card_reader is None, "Already initialized"
@@ -24,6 +25,7 @@ async def card_startup():
     card_reader.start()
 
 
+@router.on_event('shutdown')
 async def card_shutdown():
     global card_reader
     assert card_reader is not None, "Not initialized"
@@ -44,6 +46,20 @@ async def get_card():
         response = await client.post(
             f"{config.card_auth.server_url}/card/authorize",
             json=CardModel(card_id=card_id).dict(),
+            headers={'X-Card-Api-Key': config.card_auth.card_login_api_key},
+        )
+    return Response(content=response.content, status_code=response.status_code, headers=response.headers)
+
+
+@router.post(
+    'register',
+    tags=['Auth'],
+)
+async def register_card(card: CardModel):
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{config.card_auth.server_url}/card/register",
+            json=card.dict(),
             headers={'X-Card-Api-Key': config.card_auth.card_login_api_key},
         )
     return Response(content=response.content, status_code=response.status_code, headers=response.headers)

@@ -14,6 +14,7 @@ station: Optional[Station] = None
 thread_executor = ThreadPoolExecutor(1, thread_name_prefix="hardware_thread_")
 
 
+@router.on_event('startup')
 async def bay_startup():
     global station
     assert station is None, "Already initialized"
@@ -21,6 +22,7 @@ async def bay_startup():
     await asyncio.get_running_loop().run_in_executor(thread_executor, station.configure)
 
 
+@router.on_event('shutdown')
 async def bay_shutdown():
     global station
     assert station is not None, "Not initialized"

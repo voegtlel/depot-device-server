@@ -10,18 +10,6 @@ router.include_router(bays_router, prefix='/api/v1/device')
 router.include_router(auth_router, prefix='/api/v1/auth')
 
 
-@router.on_event('startup')
-async def startup():
-    await bay_startup()
-    await card_startup()
-
-
-@router.on_event('shutdown')
-async def shutdown():
-    await bay_shutdown()
-    await card_shutdown()
-
-
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
