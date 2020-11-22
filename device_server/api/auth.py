@@ -1,20 +1,14 @@
 import httpx
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, Body
 from starlette.responses import Response
 from typing import Optional
 
 from device_server.card.reader import CardReader
 from device_server.config import config
+from device_server.model.auth import AuthenticationResult, CardModel
 
 router = APIRouter()
-
-
 card_reader: Optional[CardReader] = None
-
-
-class CardModel(BaseModel):
-    card_id: str
 
 
 @router.on_event('startup')
@@ -36,8 +30,11 @@ async def card_shutdown():
 @router.get(
     '',
     tags=['Auth'],
+    response_model=AuthenticationResult,
+    responses={404: {'model': CardModel}},
 )
 async def get_card():
+    """Gets the authentication result. If 404 is returned, a card was found but not registered yet."""
     card_id = card_reader.read_card_id()
     if card_id is None:
         return Response(status_code=204)
@@ -48,6 +45,8 @@ async def get_card():
             json=CardModel(card_id=card_id).dict(),
             headers={'X-Card-Api-Key': config.card_auth.card_login_api_key},
         )
+    if response.status_code == 404:
+        return CardModel(card_id=card_id)
     return Response(content=response.content, status_code=response.status_code, headers=response.headers)
 
 
@@ -55,7 +54,7 @@ async def get_card():
     'register',
     tags=['Auth'],
 )
-async def register_card(card: CardModel):
+async def register_card(card: CardModel = Body(...)):
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{config.card_auth.server_url}/card/register",
